@@ -8,6 +8,8 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 900
 FPS = 60
 BG_COLOR = (0, 0, 0)
+MIN_BET = 25
+BET_INCREMENT = 25
 
 pygame.display.set_caption('CBC Blackjack!')
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -20,6 +22,8 @@ hand_outcome = 0
 game_records = [0, 0, 0] # win / loss / push
 player_score = 0
 dealer_score = 0
+player_bank = 500
+current_bet = MIN_BET
 outcome = 0
 initial_deal = False
 reveal_dealer = False
@@ -77,11 +81,34 @@ def draw_game(active, record, result):
     # initially on startup (not active) only option is to deal new hand
     if not active:
         # create the "DEAL HAND" button
-        deal = pygame.draw.rect(screen, (255, 255, 255), [150, 20, 300, 100], 0, 5)
-        pygame.draw.rect(screen, (0, 255, 0), [150, 20, 300, 100], 3, 5)
+        deal = pygame.draw.rect(screen, (255, 255, 255), [150, 670, 500, 100], 0, 5)
+        pygame.draw.rect(screen, (0, 255, 0), [150, 670, 500, 100], 3, 5)
         deal_text = font.render('DEAL HAND', True, (0, 0, 0))
-        screen.blit(deal_text, (165, 50))
+        screen.blit(deal_text, (250, 700))
         button_list.append(deal)
+    
+        # draw the "Bank" Text
+        bet_text = font.render(f"BANK: {player_bank}", True, (255, 255, 255))
+        screen.blit(bet_text, (165, 100))
+
+        # draw the "BET" Text
+        bet_text = font.render('BET: ', True, (255, 255, 255))
+        screen.blit(bet_text, (165, 150))
+
+        # draw the "+" bet button
+        plus = pygame.draw.rect(screen, (255, 255, 255), [550, 150, 100, 50], 0, 5)
+        pygame.draw.rect(screen, (0, 255, 0), [550, 150, 100, 50], 3, 5)
+        plus_text = font.render('+', True, (0, 0, 0))
+        screen.blit(plus_text, (590, 150))
+        button_list.append(plus)
+
+        # draw the "-" bet button
+        minus = pygame.draw.rect(screen, (255, 255, 255), [280, 150, 100, 50], 0, 5)
+        pygame.draw.rect(screen, (0, 255, 0), [280, 150, 100, 50], 3, 5)
+        minus_text = font.render('-', True, (0, 0, 0))
+        screen.blit(minus_text, (320, 150))
+        button_list.append(minus)
+
     # once game started, show the HIT and STAND buttons and win/loss records
     else:
         # create the "HIT" button
@@ -147,6 +174,13 @@ def draw_scores(player_hand, dealer_hand):
         screen.blit(font.render(f'Score[{dealer_hand}]', True, (255, 255, 255)), (350, 100))
 
 #######################################
+# draw player bet amount
+#######################################
+def draw_bet(amount):
+    bet_text = font.render(f"{amount}", True, (255, 255, 255))
+    screen.blit(bet_text, (450, 150))
+
+#######################################
 # check endgame conditions function
 #######################################
 def check_endgame(hand_act, dealer_score, player_score, result, totals, add):
@@ -194,6 +228,8 @@ while run: ##################### basic game loop ###############################
             if dealer_score < 17:
                 dealer_hand, game_deck = deal_cards(dealer_hand, game_deck)
         draw_scores(player_score, dealer_score)
+    else:
+        draw_bet(current_bet)
 
     buttons = draw_game(active, game_records, outcome)
 
@@ -215,7 +251,20 @@ while run: ##################### basic game loop ###############################
                     reveal_dealer = False
                     outcome = 0
                     add_score = True
-            else:
+                elif buttons[1].collidepoint(event.pos):
+                    # player clicked "+" bet button
+                    print("CLICKED THE + BET BUTTON")
+                    current_bet = current_bet + BET_INCREMENT
+                    if current_bet >= player_bank:
+                        current_bet = player_bank
+
+                elif buttons[2].collidepoint(event.pos):
+                    # player clicked "-" bet button
+                    print("Clicked the minus bet button")
+                    current_bet = current_bet - BET_INCREMENT
+                    if current_bet <= 0 + MIN_BET:
+                        current_bet = MIN_BET
+            else:      
                 # if player can hit, allow them to draw a card
                 if buttons[0].collidepoint(event.pos) and player_score < 21 and hand_active:
                     player_hand, game_deck = deal_cards(player_hand, game_deck)
